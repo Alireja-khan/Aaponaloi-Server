@@ -12,14 +12,10 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-
-
-
-
-
+// MongoDB URI
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vgnu9ma.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+// Create Mongo Client
 const client = new MongoClient(uri, {
     serverApi: {
         version: ServerApiVersion.v1,
@@ -30,28 +26,41 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-        // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
-        // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
-    } finally {
-        // Ensures that the client will close when you finish/error
-        // await client.close();
+        console.log("✅ MongoDB connected!");
+
+        // All collections
+        const db = client.db("aaponaloiDB");
+
+        const usersCollection = db.collection("users");
+        const apartmentsCollection = db.collection("apartments");
+        const agreementsCollection = db.collection("agreements");
+        const paymentsCollection = db.collection("payments");
+        const couponsCollection = db.collection("coupons");
+        const announcementsCollection = db.collection("announcements");
+
+        // Import routes
+        const authRoutes = require('./routes/auth.routes');
+        const usersRoutes = require('./routes/users.routes');
+
+        // Use routes
+        app.use('/api/auth', authRoutes);
+        app.use('/api/users', usersRoutes(usersCollection));
+        // Add other routes here later
+
+        // Test route
+        app.get('/', (req, res) => {
+            res.send('Aaponaloi Backend Server Running 🚀');
+        });
+
+    } catch (err) {
+        console.error('❌ MongoDB connection error:', err);
     }
 }
+
 run().catch(console.dir);
 
-
-
-
-
-// sample route
-app.get('/', (req, res) => {
-    res.send('Parcel server is running')
-});
-
-// start the server
+// Start server
 app.listen(port, () => {
-    console.log(`Server is listening on Port ${port}`);
+    console.log(`🚀 Server running on http://localhost:${port}`);
 });

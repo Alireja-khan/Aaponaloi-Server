@@ -1,12 +1,28 @@
 {
-  "type": "commonjs",
+  "name": "aaponaloi-server",
+  "version": "1.0.0",
+  "description": "Backend server for Aaponaloi Building Management System",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [
+    "aaponaloi",
+    "express",
+    "mongodb",
+    "vercel",
+    "building-management"
+  ],
+  "author": "Alireja Khan",
+  "license": "ISC",
+  "type": "commonjs",
   "dependencies": {
-    "express": "^4.x",
-    "serverless-http": "^3.x",
-    "cors": "^2.x",
-    "dotenv": "^16.x"
+    "cors": "^2.8.5",
+    "dotenv": "^17.1.0",
+    "express": "^5.1.0",
+    "firebase-admin": "^13.4.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.17.0"
   }
 }

@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
 const { generateToken } = require('../utils/jwt');
 
-// Login/Register combined logic
-router.post('/jwt', async (req, res) => {
+router.post('/jwt', (req, res) => {
   const user = req.body;
-  const token = generateToken(user);
+  if (!user?.email) {
+    return res.status(400).send({ message: 'Email is required' });
+  }
+
+  const token = generateToken({ email: user.email, role: user.role || 'user' });
   res.send({ token });
 });
 

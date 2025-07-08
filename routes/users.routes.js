@@ -7,6 +7,17 @@ module.exports = (usersCollection) => {
     res.send(users);
   });
 
+
+
+  router.get('/profile/:email', async (req, res) => {
+    const email = req.params.email;
+    const user = await usersCollection.findOne({ email });
+    if (!user) return res.status(404).send({ message: 'User not found' });
+    res.send(user);
+  });
+
+
+
   router.put('/profile/:email', async (req, res) => {
     const email = req.params.email;
     const updateData = req.body;

@@ -172,6 +172,29 @@ async function run() {
 
 
 
+    // ============ Payment =============
+
+
+
+    // GET payment history by email
+    app.get('/payments', async (req, res) => {
+      const { email } = req.query;
+      if (!email) return res.status(400).send({ message: 'Email is required' });
+
+      try {
+        const payments = await paymentsCollection
+          .find({ email })
+          .sort({ paidAt: -1 })
+          .toArray();
+
+        res.send(payments);
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to fetch payment history' });
+      }
+    });
+
+
+
 
     // POST new payment
     app.post('/payments', async (req, res) => {

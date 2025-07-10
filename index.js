@@ -72,14 +72,30 @@ async function run() {
 
     // ========== Agreements ==========
 
+    // Admin: Get all agreement requests (no email required)
+    app.get('/all-agreements', async (req, res) => {
+      const allAgreements = await agreementCollection.find().toArray();
+      res.send(allAgreements);
+    });
+
+
     // GET agreements by email
     app.get('/agreements', async (req, res) => {
       const { email } = req.query;
       if (!email) return res.status(400).send({ message: 'Email required' });
 
-      const userAgreements = await agreementCollection.find({ email }).toArray();
-      res.send(userAgreements);
+      const existing = await agreementCollection.findOne({ email });
+
+      if (existing) {
+        return res.status(200).json({
+          hasApplied: true,
+          appliedApartment: existing.apartmentNo, // 👈 Include this!
+        });
+      }
+
+      res.status(200).json({ hasApplied: false });
     });
+
 
     // POST new agreement (with duplicate check)
     app.post('/agreements', async (req, res) => {
@@ -155,11 +171,42 @@ async function run() {
     });
 
 
+    // =========== Members ===========
+
     // Get all members
     app.get('/users/members', async (req, res) => {
       const members = await usersCollection.find({ role: 'member' }).toArray();
       res.send(members);
     });
+
+
+    // Accept or reject agreement request
+    app.patch('/agreements/respond/:id', async (req, res) => {
+      const { status, userEmail, approve } = req.body;
+      const id = req.params.id;
+
+      try {
+        // Step 1: update agreement status
+        await agreementCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { status } }
+        );
+
+        // Step 2: if approved, promote to member
+        if (approve && userEmail) {
+          await usersCollection.updateOne(
+            { email: userEmail },
+            { $set: { role: 'member' } }
+          );
+        }
+
+        res.send({ message: 'Agreement updated successfully' });
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to update agreement' });
+      }
+    });
+
+
 
     // Get a single user (for role check)
     app.get('/users/:email', async (req, res) => {
@@ -167,20 +214,6 @@ async function run() {
       res.send(user);
     });
 
-
-    // // WARNING: For setup only. Remove this route after initial setup!
-    // app.patch('/users/make-admin/:email', async (req, res) => {
-    //   const email = req.params.email;
-    //   try {
-    //     const result = await usersCollection.updateOne(
-    //       { email },
-    //       { $set: { role: 'admin' } }
-    //     );
-    //     res.send({ message: 'User promoted to admin', result });
-    //   } catch (error) {
-    //     res.status(500).send({ message: 'Failed to update role' });
-    //   }
-    // });
 
 
 

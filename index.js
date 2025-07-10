@@ -28,6 +28,7 @@ async function run() {
     const db = client.db('aaponaloiDB');
     const apartmentCollection = db.collection('apartments');
     const agreementCollection = db.collection('agreements');
+    const announcementsCollection = db.collection('announcements');
 
     // ========== Apartments ==========
 
@@ -36,6 +37,19 @@ async function run() {
       const apartments = await apartmentCollection.find().toArray();
       res.send(apartments);
     });
+
+
+    // GET all announcements
+    app.get('/announcements', async (req, res) => {
+      try {
+        const announcements = await announcementsCollection.find().sort({ createdAt: -1 }).toArray();
+        res.send(announcements);
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to fetch announcements' });
+      }
+    });
+
+
 
     // Optional: POST new apartment
     app.post('/apartments', async (req, res) => {

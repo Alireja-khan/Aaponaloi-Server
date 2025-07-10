@@ -79,6 +79,7 @@ async function run() {
     });
 
 
+
     // GET agreements by email
     app.get('/agreements', async (req, res) => {
       const { email } = req.query;
@@ -95,6 +96,28 @@ async function run() {
 
       res.status(200).json({ hasApplied: false });
     });
+
+
+
+    // ✅ Get accepted (checked) agreement for a user
+    app.get('/agreements/accepted/:email', async (req, res) => {
+      const email = req.params.email;
+
+      try {
+        const agreement = await agreementCollection.findOne({ email, status: 'checked' });
+
+        if (!agreement) {
+          return res.status(404).send({ message: 'No accepted agreement found' });
+        }
+
+        res.send(agreement);
+      } catch (error) {
+        console.error('Error fetching accepted agreement:', error);
+        res.status(500).send({ message: 'Failed to fetch agreement' });
+      }
+    });
+
+
 
 
     // POST new agreement (with duplicate check)

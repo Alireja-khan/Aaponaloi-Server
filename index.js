@@ -26,9 +26,13 @@ async function run() {
     await client.connect();
 
     const db = client.db('aaponaloiDB');
+    const usersCollection = db.collection('users');
     const apartmentCollection = db.collection('apartments');
     const agreementCollection = db.collection('agreements');
     const announcementsCollection = db.collection('announcements');
+
+
+
 
     // ========== Apartments ==========
 
@@ -50,7 +54,6 @@ async function run() {
     });
 
 
-
     // Optional: POST new apartment
     app.post('/apartments', async (req, res) => {
       try {
@@ -61,6 +64,11 @@ async function run() {
         res.status(500).send({ message: 'Failed to create apartment' });
       }
     });
+
+
+
+
+
 
     // ========== Agreements ==========
 
@@ -120,6 +128,72 @@ async function run() {
         res.status(500).send({ message: 'Failed to update status' });
       }
     });
+
+
+    // ========== Users ==========
+
+    // Save or update user on login
+    app.put('/users/:email', async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+
+      const existingUser = await usersCollection.findOne({ email });
+
+      const update = {
+        $set: {
+          name: user.name,
+          photo: user.photo,
+          phone: user.phone,
+          // Preserve existing role or use incoming role or default to 'user'
+          role: existingUser?.role || user.role || 'user',
+        },
+      };
+
+      const options = { upsert: true };
+      const result = await usersCollection.updateOne({ email }, update, options);
+      res.send(result);
+    });
+
+
+    // Get all members
+    app.get('/users/members', async (req, res) => {
+      const members = await usersCollection.find({ role: 'member' }).toArray();
+      res.send(members);
+    });
+
+    // Get a single user (for role check)
+    app.get('/users/:email', async (req, res) => {
+      const user = await usersCollection.findOne({ email: req.params.email });
+      res.send(user);
+    });
+
+
+    // // WARNING: For setup only. Remove this route after initial setup!
+    // app.patch('/users/make-admin/:email', async (req, res) => {
+    //   const email = req.params.email;
+    //   try {
+    //     const result = await usersCollection.updateOne(
+    //       { email },
+    //       { $set: { role: 'admin' } }
+    //     );
+    //     res.send({ message: 'User promoted to admin', result });
+    //   } catch (error) {
+    //     res.status(500).send({ message: 'Failed to update role' });
+    //   }
+    // });
+
+
+
+    // Change member role to user
+    app.patch('/users/member-to-user/:email', async (req, res) => {
+      const email = req.params.email;
+      const result = await usersCollection.updateOne({ email }, { $set: { role: 'user' } });
+      res.send(result);
+    });
+
+
+
+
 
     await client.db('admin').command({ ping: 1 });
     console.log('✅ Connected to MongoDB');

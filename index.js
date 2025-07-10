@@ -27,6 +27,7 @@ async function run() {
 
     const db = client.db('aaponaloiDB');
     const usersCollection = db.collection('users');
+    const paymentsCollection = db.collection('payments');
     const apartmentCollection = db.collection('apartments');
     const agreementCollection = db.collection('agreements');
     const announcementsCollection = db.collection('announcements');
@@ -167,6 +168,48 @@ async function run() {
         res.status(500).send({ message: 'Failed to update status' });
       }
     });
+
+
+
+
+
+    // POST new payment
+    app.post('/payments', async (req, res) => {
+      try {
+        const paymentData = req.body;
+
+        // Required fields check
+        const requiredFields = ['email', 'month', 'rent', 'apartmentNo'];
+        for (const field of requiredFields) {
+          if (!paymentData[field]) {
+            return res.status(400).send({ message: `${field} is required` });
+          }
+        }
+
+        // Prevent duplicate payment for the same month and apartment
+        const exists = await paymentsCollection.findOne({
+          email: paymentData.email,
+          apartmentNo: paymentData.apartmentNo,
+          month: paymentData.month,
+        });
+
+        if (exists) {
+          return res.status(409).send({ message: 'Payment already exists for this month' });
+        }
+
+        paymentData.paidAt = new Date();
+
+        const result = await paymentsCollection.insertOne(paymentData);
+        res.status(201).send(result);
+      } catch (error) {
+        console.error('Payment error:', error);
+        res.status(500).send({ message: 'Failed to save payment' });
+      }
+    });
+
+
+
+
 
 
     // ========== Users ==========

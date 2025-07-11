@@ -44,16 +44,6 @@ async function run() {
     });
 
 
-    // GET all announcements
-    app.get('/announcements', async (req, res) => {
-      try {
-        const announcements = await announcementsCollection.find().sort({ createdAt: -1 }).toArray();
-        res.send(announcements);
-      } catch (error) {
-        res.status(500).send({ message: 'Failed to fetch announcements' });
-      }
-    });
-
 
     // Optional: POST new apartment
     app.post('/apartments', async (req, res) => {
@@ -174,8 +164,6 @@ async function run() {
 
     // ============ Payment =============
 
-
-
     // GET payment history by email
     app.get('/payments', async (req, res) => {
       const { email } = req.query;
@@ -233,9 +221,21 @@ async function run() {
 
 
 
-
-
     // ========== Users ==========
+
+
+    // Get all users
+    app.get('/users', async (req, res) => {
+      try {
+        const users = await usersCollection.find().toArray();
+        res.send(users);
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+        res.status(500).send({ message: 'Failed to fetch users' });
+      }
+    });
+
+
 
     // Save or update user on login
     app.put('/users/:email', async (req, res) => {
@@ -260,13 +260,28 @@ async function run() {
     });
 
 
+    // Get a single user (for role check)
+    app.get('/users/:email', async (req, res) => {
+      const user = await usersCollection.findOne({ email: req.params.email });
+      res.send(user);
+    });
+
+
+
     // =========== Members ===========
 
     // Get all members
-    app.get('/users/members', async (req, res) => {
-      const members = await usersCollection.find({ role: 'member' }).toArray();
-      res.send(members);
+    app.get('/users', async (req, res) => {
+      try {
+        const members = await usersCollection.find({ role: 'member' }).toArray();
+        console.log('💾 Members found:', members);
+        res.send(members);
+      } catch (error) {
+        console.error('Failed to fetch members:', error);
+        res.status(500).send({ message: 'Failed to fetch members' });
+      }
     });
+
 
 
     // Accept or reject agreement request
@@ -297,22 +312,31 @@ async function run() {
 
 
 
-    // Get a single user (for role check)
-    app.get('/users/:email', async (req, res) => {
-      const user = await usersCollection.findOne({ email: req.params.email });
-      res.send(user);
-    });
-
-
+    //  ================= Admin ====================
 
 
     // Change member role to user
-    app.patch('/users/member-to-user/:email', async (req, res) => {
+    app.patch('/users/:email', async (req, res) => {
       const email = req.params.email;
       const result = await usersCollection.updateOne({ email }, { $set: { role: 'user' } });
       res.send(result);
     });
 
+
+
+
+    // ============= Announcements ===============
+
+
+    // GET all announcements
+    app.get('/announcements', async (req, res) => {
+      try {
+        const announcements = await announcementsCollection.find().sort({ createdAt: -1 }).toArray();
+        res.send(announcements);
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to fetch announcements' });
+      }
+    });
 
 
 

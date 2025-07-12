@@ -27,6 +27,7 @@ async function run() {
 
     const db = client.db('aaponaloiDB');
     const usersCollection = db.collection('users');
+    const couponsCollection = db.collection('coupons');
     const paymentsCollection = db.collection('payments');
     const apartmentCollection = db.collection('apartments');
     const agreementCollection = db.collection('agreements');
@@ -271,13 +272,11 @@ async function run() {
     // =========== Members ===========
 
     // Get all members
-    app.get('/users', async (req, res) => {
+    app.get('/members', async (req, res) => {
       try {
         const members = await usersCollection.find({ role: 'member' }).toArray();
-        console.log('💾 Members found:', members);
         res.send(members);
       } catch (error) {
-        console.error('Failed to fetch members:', error);
         res.status(500).send({ message: 'Failed to fetch members' });
       }
     });
@@ -335,6 +334,119 @@ async function run() {
         res.send(announcements);
       } catch (error) {
         res.status(500).send({ message: 'Failed to fetch announcements' });
+      }
+    });
+
+
+    // Create announcement
+    app.post('/announcements', async (req, res) => {
+      try {
+        const { title, description } = req.body;
+
+        if (!title || !description) {
+          return res.status(400).send({ message: 'Title and description are required' });
+        }
+
+        const newAnnouncement = {
+          title,
+          description,
+          createdAt: new Date(),
+        };
+
+        const result = await announcementsCollection.insertOne(newAnnouncement);
+        res.status(201).send(result);
+      } catch (error) {
+        console.error('Failed to create announcement:', error);
+        res.status(500).send({ message: 'Failed to create announcement' });
+      }
+    });
+
+
+    //================== Coupons ==================== 
+
+
+    app.get('/coupons', async (req, res) => {
+      try {
+        const coupons = await couponsCollection.find().sort({ createdAt: -1 }).toArray();
+        res.send(coupons);
+      } catch (error) {
+        console.error('Failed to fetch coupons:', error);
+        res.status(500).send({ message: 'Failed to fetch coupons' });
+      }
+    });
+
+
+
+
+    app.post('/coupons', async (req, res) => {
+      try {
+        const { code, discount, description } = req.body;
+
+        if (!code || !discount || !description) {
+          return res.status(400).send({ message: 'All fields are required' });
+        }
+
+        const coupon = {
+          code,
+          discount: parseFloat(discount),
+          description,
+          createdAt: new Date(),
+        };
+
+        const result = await couponsCollection.insertOne(coupon);
+        res.status(201).send(result);
+      } catch (error) {
+        console.error('Failed to add coupon:', error);
+        res.status(500).send({ message: 'Failed to add coupon' });
+      }
+    });
+
+
+    app.put('/coupons/:id', async (req, res) => {
+      const { id } = req.params;
+      const { code, discount, description } = req.body;
+
+      if (!code || !discount || !description) {
+        return res.status(400).send({ message: 'All fields are required' });
+      }
+
+      try {
+        const updatedCoupon = {
+          code,
+          discount: parseFloat(discount),
+          description,
+          updatedAt: new Date()
+        };
+
+        const result = await couponsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updatedCoupon }
+        );
+
+        if (result.matchedCount === 0) {
+          return res.status(404).send({ message: 'Coupon not found' });
+        }
+
+        res.status(200).send({ message: 'Coupon updated successfully' });
+      } catch (error) {
+        console.error('Failed to update coupon:', error);
+        res.status(500).send({ message: 'Failed to update coupon' });
+      }
+    });
+
+
+
+    app.delete('/coupons/:id', async (req, res) => {
+      const id = req.params.id;
+      try {
+        const result = await couponsCollection.deleteOne({ _id: new ObjectId(id) });
+        if (result.deletedCount === 1) {
+          res.status(200).send({ success: true });
+        } else {
+          res.status(404).send({ success: false, message: 'Coupon not found' });
+        }
+      } catch (error) {
+        res.status(500).send({ success: false, error: error.message });
       }
     });
 

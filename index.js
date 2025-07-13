@@ -40,9 +40,24 @@ async function run() {
 
     // GET all apartments
     app.get('/apartments', async (req, res) => {
-      const apartments = await apartmentCollection.find().toArray();
-      res.send(apartments);
+      try {
+        const apartments = await apartmentCollection.find().toArray();
+        const agreements = await agreementCollection.find().toArray();
+
+        const bookedApartments = new Set(agreements.map(ag => ag.apartmentNo));
+
+        const apartmentsWithStatus = apartments.map(apt => ({
+          ...apt,
+          isBooked: bookedApartments.has(apt.apartmentNo)
+        }));
+
+        res.send(apartmentsWithStatus);
+      } catch (error) {
+        console.error('Failed to fetch apartments:', error);
+        res.status(500).send({ message: 'Failed to fetch apartments' });
+      }
     });
+
 
 
 
@@ -63,6 +78,7 @@ async function run() {
 
 
     // ========== Agreements ==========
+
 
     // Admin: Get all agreement requests (no email required)
     app.get('/all-agreements', async (req, res) => {
@@ -220,8 +236,6 @@ async function run() {
     });
 
 
-
-
     // ========== Users ==========
 
 
@@ -235,7 +249,6 @@ async function run() {
         res.status(500).send({ message: 'Failed to fetch users' });
       }
     });
-
 
 
     // Save or update user on login
@@ -266,6 +279,38 @@ async function run() {
       const user = await usersCollection.findOne({ email: req.params.email });
       res.send(user);
     });
+
+
+    // PATCH to make admin
+    app.patch('/users/admin/:id', async (req, res) => {
+      const id = req.params.id;
+      try {
+        const result = await usersCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { role: 'admin' } }
+        );
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to make admin' });
+      }
+    });
+
+
+    // PATCH to remove admin (set to member)
+    app.patch('/users/remove-admin/:id', async (req, res) => {
+      const id = req.params.id;
+      try {
+        const result = await usersCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { role: 'user' } }
+        );
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to remove admin' });
+      }
+    });
+
+
 
 
 
@@ -372,6 +417,48 @@ async function run() {
       } catch (error) {
         console.error('Failed to fetch coupons:', error);
         res.status(500).send({ message: 'Failed to fetch coupons' });
+      }
+    });
+
+
+    // Get single coupon by code
+    app.get('/coupons/:code', async (req, res) => {
+      try {
+        const code = req.params.code.toUpperCase(); // ensure case-insensitive match
+        const coupon = await couponsCollection.findOne({ code });
+
+        if (!coupon) {
+          return res.status(404).send({ message: 'Coupon not found' });
+        }
+
+        res.send(coupon);
+      } catch (error) {
+        console.error('Failed to fetch coupon by code:', error);
+        res.status(500).send({ message: 'Failed to fetch coupon' });
+      }
+    });
+
+
+
+    // Get accepted agreement by user email
+    app.get('/agreements/accepted/:email', async (req, res) => {
+      try {
+        const email = req.params.email;
+
+        // Assuming your MongoDB collection is called 'agreementsCollection'
+        const agreement = await agreementsCollection.findOne({
+          email: email,
+          status: 'accepted',
+        });
+
+        if (!agreement) {
+          return res.status(404).send({ message: 'No accepted agreement found' });
+        }
+
+        res.send(agreement);
+      } catch (error) {
+        console.error('Failed to fetch accepted agreement:', error);
+        res.status(500).send({ message: 'Server error while fetching agreement' });
       }
     });
 

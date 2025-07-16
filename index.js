@@ -23,7 +23,8 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+
+    // await client.connect();
 
     const db = client.db('aaponaloiDB');
     const usersCollection = db.collection('users');

@@ -237,25 +237,41 @@ async function run() {
     });
 
 
-    // Get total revenue
-    app.get('/payments/total-revenue', async (req, res) => {
-      try {
-        const result = await paymentsCollection.aggregate([
-          {
-            $group: {
-              _id: null,
-              total: { $sum: { $toDouble: "$rent" } } // make sure rent is stored as number
-            }
-          }
-        ]).toArray();
+    // Add this to your backend (index.js)
 
-        res.send({ totalRevenue: result[0]?.total || 0 });
-      } catch (error) {
-        console.error("Failed to fetch total revenue:", error);
-        res.status(500).send({ message: "Failed to fetch total revenue" });
-      }
-    });
+    // GET total revenue
+    // app.get('/revenue', async (req, res) => {
+    //   try {
+    //     const payments = await paymentsCollection.find().toArray();
 
+    //     const totalRevenue = payments.reduce((sum, payment) => {
+    //       return sum + parseFloat(payment.rent || 0);
+    //     }, 0);
+
+    //     // Get monthly breakdown
+    //     const monthlyRevenue = payments.reduce((acc, payment) => {
+    //       const monthYear = new Date(payment.paidAt).toLocaleString('default', {
+    //         month: 'short',
+    //         year: 'numeric'
+    //       });
+
+    //       if (!acc[monthYear]) {
+    //         acc[monthYear] = 0;
+    //       }
+    //       acc[monthYear] += parseFloat(payment.rent || 0);
+
+    //       return acc;
+    //     }, {});
+
+    //     res.send({
+    //       total: totalRevenue,
+    //       monthly: monthlyRevenue
+    //     });
+    //   } catch (error) {
+    //     console.error('Failed to calculate revenue:', error);
+    //     res.status(500).send({ message: 'Failed to calculate revenue' });
+    //   }
+    // });
 
 
 
@@ -334,6 +350,42 @@ async function run() {
       } catch (error) {
         res.status(500).send({ message: 'Failed to remove admin' });
       }
+    });
+
+
+    // Save or update user on login
+    app.put('/users/:email', async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+
+      const existingUser = await usersCollection.findOne({ email });
+
+      const update = {
+        $set: {
+          name: user.name,
+          photo: user.photo,
+          phone: user.phone,
+          role: existingUser?.role || user.role || 'user',
+          // Add all new fields
+          personalInformation: user.personalInformation || {
+            email: email,
+            phone: user.phone,
+            photo: user.photo
+          },
+          professionalInformation: user.professionalInformation || {
+            role: existingUser?.role || user.role || 'user'
+          },
+          accountSettings: user.accountSettings || {},
+          adminActivities: user.adminActivities || {},
+          financialInformation: user.financialInformation || {},
+          systemAccess: user.systemAccess || {},
+          documentation: user.documentation || {}
+        }
+      };
+
+      const options = { upsert: true };
+      const result = await usersCollection.updateOne({ email }, update, options);
+      res.send(result);
     });
 
 

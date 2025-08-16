@@ -237,6 +237,31 @@ async function run() {
     });
 
 
+    // Get total revenue
+    app.get('/payments/total-revenue', async (req, res) => {
+      try {
+        const result = await paymentsCollection.aggregate([
+          {
+            $group: {
+              _id: null,
+              total: { $sum: { $toDouble: "$rent" } } // make sure rent is stored as number
+            }
+          }
+        ]).toArray();
+
+        res.send({ totalRevenue: result[0]?.total || 0 });
+      } catch (error) {
+        console.error("Failed to fetch total revenue:", error);
+        res.status(500).send({ message: "Failed to fetch total revenue" });
+      }
+    });
+
+
+
+
+
+
+
     // ========== Users ==========
 
 
